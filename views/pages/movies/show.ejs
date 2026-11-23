@@ -1,0 +1,46 @@
+<%- include('../../partials/siteHeader.ejs') %>
+
+<div class="container mt-5">
+    <div class="card shadow-lg p-4">
+        <div class="row g-4">
+            <div class="col-md-4 text-center">
+                <% if (movie.thumbnail) { %>
+                    <img src="<%= movie.thumbnail.startsWith('http') ? movie.thumbnail : '/img/uploades/' + movie.thumbnail %>" 
+                         class="img-fluid rounded shadow" 
+                         alt="<%= movie.title %>"
+                         style="max-height: 400px; object-fit: cover;">
+                <% } else { %>
+                    <div class="bg-secondary text-white rounded d-flex align-items-center justify-content-center" style="height: 350px;">
+                        No Image Available
+                    </div>
+                <% } %>
+            </div>
+
+            <div class="col-md-8 d-flex flex-column justify-content-center">
+                <h1 class="display-5 fw-bold mb-2"><%= movie.title %></h1>
+                <p class="text-muted fs-5 mb-3"><strong>Release Year:</strong> <%= movie.year %></p>
+
+                <div class="mb-3">
+                    <h5 class="fw-bold">Genres:</h5>
+                    <p class="fs-6 text-primary">
+                        <%= Array.isArray(movie.genres) ? movie.genres.join(', ') : movie.genres %>
+                    </p>
+                </div>
+
+                <div class="mb-4">
+                    <h5 class="fw-bold">Cast:</h5>
+                    <p class="fs-6">
+                        <%= Array.isArray(movie.cast) ? movie.cast.join(', ') : movie.cast %>
+                    </p>
+                </div>
+
+                <div>
+                    <a href="/movies/updateForm/<%= movie._id %>" class="btn btn-warning me-2">Edit</a>
+                    <a href="/movies" class="btn btn-secondary">Back to Movies</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('../../partials/siteFooter.ejs') %>

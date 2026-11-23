@@ -1,0 +1,115 @@
+<%- include('../../partials/siteHeader.ejs') %>
+
+<div class="container my-5" style="max-width: 850px;">
+    <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
+        <h2 class="fw-bold mb-4">Edit Movie: <%= movie.title %></h2>
+        
+        <form action="/movies/update" method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="id" value="<%= movie._id %>">
+
+            <!-- Movie Title -->
+            <div class="mb-3">
+                <label class="form-label text-secondary fw-semibold">Movie Title</label>
+                <input type="text" name="title" class="form-control py-2" value="<%= movie.title %>" required>
+            </div>
+
+            <!-- Release Year -->
+            <div class="mb-3">
+                <label class="form-label text-secondary fw-semibold">Release Year</label>
+                <input type="number" name="year" class="form-control py-2" value="<%= movie.year %>" required>
+            </div>
+
+            <!-- Genres Section -->
+            <div class="mb-3">
+                <label class="form-label text-secondary fw-semibold">Genres</label>
+                
+                <!-- أزرار الاختيارات السريعة رمادية وبها علامة + -->
+                <div class="d-flex flex-wrap gap-2 mb-2">
+                    <button type="button" class="btn btn-sm btn-light border text-muted px-2 py-1" onclick="addGenre('Action')">+ Action</button>
+                    <button type="button" class="btn btn-sm btn-light border text-muted px-2 py-1" onclick="addGenre('Comedy')">+ Comedy</button>
+                    <button type="button" class="btn btn-sm btn-light border text-muted px-2 py-1" onclick="addGenre('Drama')">+ Drama</button>
+                    <button type="button" class="btn btn-sm btn-light border text-muted px-2 py-1" onclick="addGenre('Horror')">+ Horror</button>
+                    <button type="button" class="btn btn-sm btn-light border text-muted px-2 py-1" onclick="addGenre('Sci-Fi')">+ Sci-Fi</button>
+                    <button type="button" class="btn btn-sm btn-light border text-muted px-2 py-1" onclick="addGenre('Romance')">+ Romance</button>
+                    <button type="button" class="btn btn-sm btn-light border text-muted px-2 py-1" onclick="addGenre('Thriller')">+ Thriller</button>
+                    <button type="button" class="btn btn-sm btn-light border text-muted px-2 py-1" onclick="addGenre('Adventure')">+ Adventure</button>
+                    <button type="button" class="btn btn-sm btn-light border text-muted px-2 py-1" onclick="addGenre('Animation')">+ Animation</button>
+                </div>
+
+                <!-- الحقل المخفي الذي يتم إرساله للسيرفر -->
+                <% 
+                    let existingGenres = Array.isArray(movie.genres) ? movie.genres : (movie.genres ? movie.genres.split(',').map(g => g.trim()) : []);
+                %>
+                <input type="hidden" name="genres" id="genresInput" value="<%= existingGenres.join(',') %>">
+
+                <!-- المستطيل الذي تظهر بداخله البادجات الزرقاء مع علامة المسح -->
+                <div id="genresContainer" class="form-control d-flex flex-wrap align-items-center gap-2" style="min-height: 46px;">
+                    <!-- يتم بناؤها تلقائياً بالـ JavaScript -->
+                </div>
+            </div>
+
+            <!-- Cast -->
+            <div class="mb-3">
+                <label class="form-label text-secondary fw-semibold">Cast (Comma separated)</label>
+                <input type="text" name="cast" class="form-control py-2" value="<%= Array.isArray(movie.cast) ? movie.cast.join(', ') : movie.cast %>">
+            </div>
+
+            <!-- Thumbnail / Photo -->
+            <div class="mb-4">
+                <label class="form-label text-secondary fw-semibold">Thumbnail / Photo</label>
+                <input type="file" name="thumbnail" class="form-control py-2">
+                <% if (movie.thumbnail) { %>
+                    <small class="text-muted d-block mt-1">Current Image: <%= movie.thumbnail %></small>
+                <% } %>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-warning fw-semibold px-4 py-2">Update Movie</button>
+                <a href="/movies" class="btn btn-secondary fw-semibold px-4 py-2">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const genresInput = document.getElementById('genresInput');
+    const container = document.getElementById('genresContainer');
+
+    // قراءة التصنيفات المحفوظة للفيلم
+    let currentGenres = genresInput.value ? genresInput.value.split(',').map(g => g.trim()).filter(g => g !== '') : [];
+
+    function renderBadges() {
+        container.innerHTML = '';
+        currentGenres.forEach((genre, index) => {
+            const badge = document.createElement('span');
+            badge.className = 'badge bg-primary text-white d-inline-flex align-items-center gap-2 py-2 px-3 fw-normal rounded-2';
+            badge.style.fontSize = '0.9rem';
+            badge.innerHTML = `
+                <span>${genre}</span>
+                <span role="button" style="cursor: pointer; font-size: 0.95rem; font-weight: bold; line-height: 1;" onclick="removeGenre(${index})">✕</span>
+            `;
+            container.appendChild(badge);
+        });
+        genresInput.value = currentGenres.join(',');
+    }
+
+    // إضافة تصنيف عند الضغط على الزر الرمادي
+    window.addGenre = function(genreName) {
+        if (!currentGenres.includes(genreName)) {
+            currentGenres.push(genreName);
+            renderBadges();
+        }
+    };
+
+    // حذف التصنيف عند الضغط على ✕
+    window.removeGenre = function(index) {
+        currentGenres.splice(index, 1);
+        renderBadges();
+    };
+
+    // التشغيل الأولي لعرض تصنيفات الفيلم الحالية
+    renderBadges();
+</script>
+
+<%- include('../../partials/siteFooter.ejs') %>
