@@ -31,7 +31,10 @@
                     </div>
                 <% } %>
 
-                <h1 class="display-6 fw-bold mb-2 text-white"><%= movie.title %></h1>
+                <div class="movie-title-row">
+                    <h1 class="display-6 fw-bold mb-2 text-white"><%= movie.title %></h1>
+                    <%- include('../../partials/movieFavouriteButton', { movie, favoriteMovieIds, favoritePlacement: 'favorite-toggle--detail' }) %>
+                </div>
                 <p class="fs-5 mb-3" style="color: #94A3B8;"><strong>Release Year:</strong> <span class="text-white"><%= movie.year %></span></p>
 
                 <div class="mb-3">
@@ -112,7 +115,8 @@
                         </div>
 
                         <!-- Action Button -->
-                        <div>
+                        <div class="movie-series-actions">
+                            <%- include('../../partials/movieFavouriteButton', { movie: part, favoriteMovieIds, favoritePlacement: 'favorite-toggle--compact' }) %>
                             <% if (isCurrent) { %>
                                 <span class="badge px-3 py-2" style="background: rgba(124, 58, 237, 0.2); color: #7C3AED; border: 1px solid #7C3AED;">
                                     ✓ Currently Viewing

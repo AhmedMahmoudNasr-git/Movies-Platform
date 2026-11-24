@@ -1,0 +1,24 @@
+<%
+    const favoriteIds = typeof favoriteMovieIds !== 'undefined' && Array.isArray(favoriteMovieIds)
+        ? favoriteMovieIds
+        : [];
+    const movieId = movie._id.toString();
+    const isFavorite = favoriteIds.includes(movieId);
+    const favoriteLabel = isFavorite
+        ? `Remove ${movie.title} from favourites`
+        : `Add ${movie.title} to favourites`;
+%>
+<button type="button"
+        class="favorite-toggle <%= typeof favoritePlacement !== 'undefined' ? favoritePlacement : '' %><%= isFavorite ? ' is-favourite' : '' %>"
+        data-favorite-toggle
+        data-movie-id="<%= movieId %>"
+        data-movie-title="<%= movie.title %>"
+        aria-label="<%= favoriteLabel %>"
+        aria-pressed="<%= isFavorite ? 'true' : 'false' %>"
+        title="<%= favoriteLabel %>">
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78Z"
+              stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <span class="visually-hidden"><%= favoriteLabel %></span>
+</button>

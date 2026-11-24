@@ -1,18 +1,31 @@
 const movieModel = require("../models/movieModel");
+const userFavoriteModel = require("../models/userFavoriteModel");
 const { ObjectId } = require("../models/mongodbConnection");
 const AppError = require("../utils/AppError");
 const deleteUploadedFile = require("../utils/deleteFile");
 const saveUploadedFile = require("../utils/saveUploadedFile");
+
+async function getFavoriteMovieIds(req) {
+    const currentUser = req.session && req.session.user;
+    if (!currentUser) {
+        return [];
+    }
+
+    const movieIds = await userFavoriteModel.getMovieIds(currentUser.id);
+    return movieIds.map((id) => id.toString());
+}
 
 // 1. عرض جميع الأفلام مع الترقيم
 const index = async (req, res, next) => {
     try {
         const page = Math.max(1, parseInt(req.query.page) || 1);
         const { movies, pagination } = await movieModel.index(page, 12);
+        const favoriteMovieIds = await getFavoriteMovieIds(req);
         
         res.render("pages/movies/index", { 
             movies,
             pagination,
+            favoriteMovieIds,
             activeGenre: 'all',
             searchQuery: '',
             baseUrl: '/movies',
@@ -28,10 +41,12 @@ const byFranchise = async (req, res, next) => {
     try {
         const page = Math.max(1, parseInt(req.query.page) || 1);
         const { movies, pagination } = await movieModel.getFranchiseMovies(page, 12);
+        const favoriteMovieIds = await getFavoriteMovieIds(req);
 
         res.render("pages/movies/index", { 
             movies,
             pagination,
+            favoriteMovieIds,
             activeGenre: 'franchises',
             searchQuery: '',
             baseUrl: '/movies/franchises',
@@ -48,10 +63,12 @@ const moviesSearch = async (req, res, next) => {
         const page = Math.max(1, parseInt(req.query.page) || 1);
         const partOfMovieTitle = (req.query.partOfMovieTitle || '').trim();
         const { movies, pagination } = await movieModel.moviesSearch(partOfMovieTitle, page, 12);
+        const favoriteMovieIds = await getFavoriteMovieIds(req);
 
         res.render("pages/movies/index", { 
             movies,
             pagination,
+            favoriteMovieIds,
             activeGenre: '',
             searchQuery: partOfMovieTitle,
             baseUrl: '/movies/search',
@@ -68,15 +85,67 @@ const byGenre = async (req, res, next) => {
         const page = Math.max(1, parseInt(req.query.page) || 1);
         const genre = req.params.genre;
         const { movies, pagination } = await movieModel.getByGenre(genre, page, 12);
+        const favoriteMovieIds = await getFavoriteMovieIds(req);
 
         res.render("pages/movies/index", { 
             movies,
             pagination,
+            favoriteMovieIds,
             activeGenre: genre,
             searchQuery: '',
             baseUrl: `/movies/genre/${genre}`,
             pageTitle: `${genre.charAt(0).toUpperCase() + genre.slice(1)} Movies`
         });
+    } catch (err) {
+        next(err);
+    }
+};
+
+const favourites = async (req, res, next) => {
+    try {
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const { movies, pagination } = await userFavoriteModel.getMovies(req.session.user.id, page, 12);
+        const favoriteMovieIds = movies.map((movie) => movie._id.toString());
+
+        res.render("pages/movies/index", {
+            movies,
+            pagination,
+            favoriteMovieIds,
+            activeGenre: 'favourites',
+            searchQuery: '',
+            baseUrl: '/movies/favourites',
+            pageTitle: 'Favourites'
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
+const setFavourite = async (req, res, next) => {
+    const currentUser = req.session && req.session.user;
+    if (!currentUser) {
+        return res.status(401).json({ error: 'Please sign in to save favourite movies.' });
+    }
+
+    const { id } = req.params;
+    if (!ObjectId.isValid(id)) {
+        return res.status(400).json({ error: 'Invalid Movie ID format.' });
+    }
+
+    if (!req.body || typeof req.body.isFavorite !== 'boolean') {
+        return res.status(400).json({ error: 'A valid favourite state is required.' });
+    }
+
+    try {
+        if (req.body.isFavorite) {
+            const movie = await movieModel.show(id);
+            if (!movie) {
+                return res.status(404).json({ error: 'Movie not found.' });
+            }
+        }
+
+        await userFavoriteModel.setFavorite(currentUser.id, id, req.body.isFavorite);
+        res.json({ movieId: id, isFavorite: req.body.isFavorite });
     } catch (err) {
         next(err);
     }
@@ -101,6 +170,7 @@ const show = async (req, res, next) => {
         }
 
         const { seriesName, parts: seriesMovies } = await movieModel.getSeriesMovies(movie);
+        const favoriteMovieIds = await getFavoriteMovieIds(req);
         const requestedReturnTo = req.query.returnTo;
         const returnTo = typeof requestedReturnTo === 'string'
             && (requestedReturnTo === '/' || requestedReturnTo.startsWith('/movies'))
@@ -117,6 +187,7 @@ const show = async (req, res, next) => {
             movie,
             seriesName,
             seriesMovies,
+            favoriteMovieIds,
             returnTo,
             returnScroll,
             pageTitle: movie.title 
@@ -234,6 +305,7 @@ const destroy = async (req, res, next) => {
         }
 
         await movieModel.destroy(id);
+        await userFavoriteModel.removeForMovie(id);
         res.redirect("/movies");
     } catch (err) {
         next(err);
@@ -245,6 +317,8 @@ module.exports = {
     byFranchise,
     moviesSearch,
     byGenre,
+    favourites,
+    setFavourite,
     show,
     createForm,
     store,

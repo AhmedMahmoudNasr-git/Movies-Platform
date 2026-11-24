@@ -28,6 +28,8 @@ webRouter.get('/movies/series', movieController.byFranchise);
 webRouter.get('/movies/search', movieController.moviesSearch);
 webRouter.get('/moviesSearch', movieController.moviesSearch);
 webRouter.get('/movies/genre/:genre', movieController.byGenre);
+webRouter.get('/movies/favourites', requireAuth, movieController.favourites);
+webRouter.post('/movies/:id/favourite', movieController.setFavourite);
 
 // 4. مسارات إنشاء فيلم جديد (قبل /movies/:id)
 webRouter.get('/movies/new', requireAdmin, movieController.createForm);

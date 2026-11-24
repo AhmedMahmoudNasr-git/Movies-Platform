@@ -28,7 +28,17 @@
                 <span class="brand-movies">Movies</span><span class="brand-hub">Hub</span>
             </a>
 
-            <div class="d-flex align-items-center gap-3">
+            <div class="d-flex align-items-center gap-3 navbar-actions">
+                <a href="<%= typeof currentUser !== 'undefined' && currentUser ? '/movies/favourites' : '/auth/login?redirect=%2Fmovies%2Ffavourites' %>"
+                   class="navbar-favourites-link"
+                   <% if (typeof activeGenre !== 'undefined' && activeGenre === 'favourites') { %>aria-current="page"<% } %>>
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78Z"
+                              stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>Favourites</span>
+                </a>
+
                 <% if (typeof currentUser !== 'undefined' && currentUser) { %>
                     <span class="text-light d-none d-sm-inline" style="font-size: 0.92rem;">
                         Welcome, <strong><%= currentUser.username %></strong>

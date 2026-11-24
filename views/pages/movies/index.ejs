@@ -1,12 +1,14 @@
 <%- include('../../partials/siteHeader') %>
 
-<div class="container">
+<main class="container"
+      data-favourites-page="<%= activeGenre === 'favourites' ? 'true' : 'false' %>"
+      data-current-page="<%= pagination ? pagination.page : 1 %>">
     
     <!-- Title & Add Button -->
     <div class="page-header d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h1 class="mb-1">Featured Movies</h1>
-            <p class="text-muted small mb-0">Browse latest, trending, and franchise movies on MoviesHub</p>
+            <h1 class="mb-1"><%= activeGenre === 'favourites' ? 'Your Favourites' : 'Featured Movies' %></h1>
+            <p class="text-muted small mb-0"><%= activeGenre === 'favourites' ? 'Your personal collection of favourite movies' : 'Browse latest, trending, and franchise movies on MoviesHub' %></p>
         </div>
 
         <% if (typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'admin') { %>
@@ -79,28 +81,31 @@
                     <div class="card-glare"></div>
                     
                     <!-- Clickable Poster Image -->
-                    <a href="/movies/<%= movie._id %>" data-movie-navigation class="movie-poster-link" title="View <%= movie.title %>">
-                        <div class="movie-thumb-wrapper">
-                            <!-- Floating Year Badge -->
-                            <span class="badge-floating-year"><%= movie.year %></span>
+                    <div class="movie-poster-shell">
+                        <a href="/movies/<%= movie._id %>" data-movie-navigation class="movie-poster-link" title="View <%= movie.title %>">
+                            <div class="movie-thumb-wrapper">
+                                <!-- Floating Year Badge -->
+                                <span class="badge-floating-year"><%= movie.year %></span>
 
-                            <!-- Floating Sequel Badge -->
-                            <% if (isSequel) { %>
-                                <span class="badge-floating-sequel">🎞️ Sequel</span>
-                            <% } %>
+                                <!-- Floating Sequel Badge -->
+                                <% if (isSequel) { %>
+                                    <span class="badge-floating-sequel">🎞️ Sequel</span>
+                                <% } %>
 
-                            <% if (movie.thumbnail) { %>
-                                <img src="<%= movie.thumbnail.startsWith('http') ? movie.thumbnail : '/img/uploades/' + movie.thumbnail %>" 
-                                     alt="<%= movie.title %>" 
-                                     loading="lazy">
-                            <% } else { %>
-                                <span style="color: #64748b; font-size: 1.05rem; font-weight: 500;">No Poster</span>
-                            <% } %>
+                                <% if (movie.thumbnail) { %>
+                                    <img src="<%= movie.thumbnail.startsWith('http') ? movie.thumbnail : '/img/uploades/' + movie.thumbnail %>"
+                                         alt="<%= movie.title %>"
+                                         loading="lazy">
+                                <% } else { %>
+                                    <span style="color: #64748b; font-size: 1.05rem; font-weight: 500;">No Poster</span>
+                                <% } %>
 
-                            <!-- Bottom Vignette Gradient -->
-                            <div class="movie-thumb-overlay"></div>
-                        </div>
-                    </a>
+                                <!-- Bottom Vignette Gradient -->
+                                <div class="movie-thumb-overlay"></div>
+                            </div>
+                        </a>
+                        <%- include('../../partials/movieFavouriteButton', { movie, favoriteMovieIds, favoritePlacement: 'favorite-toggle--poster' }) %>
+                    </div>
 
                     <div class="movie-card-content">
                         <div>
@@ -138,7 +143,7 @@
 
         <!-- Pagination Bar -->
         <% if (typeof pagination !== 'undefined' && pagination.totalPages > 1) { %>
-            <nav class="d-flex justify-content-center mt-5 mb-3">
+            <nav class="d-flex justify-content-center mt-5 mb-3" data-favourites-pagination>
                 <ul class="pagination shadow-sm">
                     <li class="page-item <%= pagination.page <= 1 ? 'disabled' : '' %>">
                         <a class="page-link" href="<%= baseUrl %>?<%= (typeof searchQuery !== 'undefined' && searchQuery) ? 'partOfMovieTitle=' + encodeURIComponent(searchQuery) + '&' : '' %>page=<%= pagination.page - 1 %>">Previous</a>
@@ -159,17 +164,17 @@
                     </li>
                 </ul>
             </nav>
-            <div class="text-center text-muted small mb-4">
+            <div class="text-center text-muted small mb-4" data-favourites-pagination>
                 Page <%= pagination.page %> of <%= pagination.totalPages %> (Total: <%= pagination.totalMovies %> movies)
             </div>
         <% } %>
 
     <% } else { %>
         <div class="empty-card">
-            <p>No movies found matching your query.</p>
+            <p><%= activeGenre === 'favourites' ? 'You have not added any movies to your favourites yet.' : 'No movies found matching your query.' %></p>
         </div>
     <% } %>
 
-</div>
+</main>
 
 <%- include('../../partials/siteFooter') %>
