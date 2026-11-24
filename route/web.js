@@ -1,92 +1,51 @@
 const express = require('express');
 const webRouter = express.Router();
-const app = express();
-
-/* ------------- controllers ------------------- */
-
-/* const productController = require('../controllers/productController'); */
-
 const movieController = require('../controllers/movieController');
+const authController = require('../controllers/authController');
+const validateMovie = require('../middlewares/validateMovie');
+const upload = require('../middlewares/upload');
+const { requireAuth, requireAdmin } = require('../middlewares/auth');
 
-/* -------------- parse of form ------------------- */
-app.use(express.json());
-app.use(express.urlencoded({
-    extended: true
-}));
+/* ----------------- Authentication Routes ----------------- */
+webRouter.get('/auth/login', authController.loginForm);
+webRouter.post('/auth/login', authController.login);
+webRouter.get('/auth/register', authController.registerForm);
+webRouter.post('/auth/register', authController.register);
+webRouter.get('/auth/logout', authController.logout);
+webRouter.post('/auth/logout', authController.logout);
 
-const multer = require("multer");
+/* ----------------- Movies Routes ----------------- */
 
-const path = require("path");
-
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, "public/img/uploades/");
-    },
-    filename: (req, file, cb) => {
-        if(file){
-            cb(null, Date.now() + path.extname(file.originalname))
-        }
-    }
-});
-
-const upload = multer({
-    storage: storage
-});
-
-
-/* -------------- route roles ------------------------ */
-
-/* -------------------products route roles----------------------- */
-// webRouter.get('/    ', (req, res) => {
-//     movieController.index(req, res);
-// });
-
-// webRouter.get('/moviesSearch', (req, res) => {
-//     movieController.moviesSearch(req, res);
-// });
-
-
-/* ----------------- movies route roles ----------------- */
+// 1. مسارات العرض والبحث العامة
 webRouter.get('/', movieController.index);
 webRouter.get('/movies', movieController.index);
+
+// 2. مسار تصفية أفلام السلاسل والأجزاء فقط (Sequels & Franchises Only)
+webRouter.get('/movies/franchises', movieController.byFranchise);
+webRouter.get('/movies/series', movieController.byFranchise);
+
+// 3. البحث والتصنيفات
+webRouter.get('/movies/search', movieController.moviesSearch);
 webRouter.get('/moviesSearch', movieController.moviesSearch);
 webRouter.get('/movies/genre/:genre', movieController.byGenre);
 
-// CRUD Routes
-webRouter.get('/movies/createForm', movieController.createForm);
-webRouter.post('/movies/store', upload.single('thumbnail'), movieController.store);
+// 4. مسارات إنشاء فيلم جديد (قبل /movies/:id)
+webRouter.get('/movies/new', requireAdmin, movieController.createForm);
+webRouter.get('/movies/createForm', requireAdmin, movieController.createForm);
+webRouter.post('/movies', requireAdmin, upload.single('thumbnail'), validateMovie, movieController.store);
+webRouter.post('/movies/store', requireAdmin, upload.single('thumbnail'), validateMovie, movieController.store);
+
+// 5. مسار تعديل فيلم محدد
+webRouter.get('/movies/:id/edit', requireAdmin, movieController.updateForm);
+webRouter.get('/movies/updateForm/:id', requireAdmin, movieController.updateForm);
+webRouter.put('/movies/:id', requireAdmin, upload.single('thumbnail'), validateMovie, movieController.update);
+webRouter.post('/movies/update', requireAdmin, upload.single('thumbnail'), validateMovie, movieController.update);
+
+// 6. مسار حذف فيلم
+webRouter.delete('/movies/:id', requireAdmin, movieController.destroy);
+
+// 7. مسار عرض تفاصيل الفيلم بالمعرّف
+webRouter.get('/movies/:id', movieController.show);
 webRouter.get('/movies/show/:id', movieController.show);
-webRouter.get('/movies/updateForm/:id', movieController.updateForm);
-webRouter.post('/movies/update', upload.single('thumbnail'), movieController.update);
-webRouter.get('/movies/destroy/:id', movieController.destroy);
-
-
-/* webRouter.get('/products', (req, res) => {
-    productController.index(req, res);
-});
-
-webRouter.get('/products/createForm', (req, res) => {
-    productController.createForm(req, res);
-});
-
-webRouter.post('/products/store', upload.single('photo'), (req, res) => {
-    productController.store(req, res);
-});
-
-webRouter.get('/products/show/:id', (req, res) => {
-    productController.show(req, res);
-});
-
-webRouter.get('/products/destroy/:id', (req, res) => {
-    productController.destroy(req, res);
-});
-
-webRouter.get('/products/updateForm/:id', (req, res) => {
-    productController.updateForm(req, res);
-});
-webRouter.post('/products/update', upload.single('photo'), (req, res) => {
-    productController.update(req, res);
-}); */
-
 
 module.exports = webRouter;

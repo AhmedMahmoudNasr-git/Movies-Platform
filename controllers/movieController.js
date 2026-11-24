@@ -1,87 +1,248 @@
 const movieModel = require("../models/movieModel");
+const { ObjectId } = require("../models/mongodbConnection");
+const AppError = require("../utils/AppError");
+const deleteUploadedFile = require("../utils/deleteFile");
+const saveUploadedFile = require("../utils/saveUploadedFile");
 
-const index = (req, res) => {
-    movieModel.index()
-        .then(movies => {
-            res.render("pages/movies/index", { movies, activeGenre: 'all' });
+// 1. عرض جميع الأفلام مع الترقيم
+const index = async (req, res, next) => {
+    try {
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const { movies, pagination } = await movieModel.index(page, 12);
+        
+        res.render("pages/movies/index", { 
+            movies,
+            pagination,
+            activeGenre: 'all',
+            searchQuery: '',
+            baseUrl: '/movies',
+            pageTitle: 'Featured Movies'
         });
-}
+    } catch (err) {
+        next(err);
+    }
+};
 
-const moviesSearch = (req, res) => {
-    const partOfMovieTitle = req.query.partOfMovieTitle;
-    movieModel.moviesSearch(partOfMovieTitle)
-        .then(movies => {
-            res.render("pages/movies/index", { movies, activeGenre: '' });
+// 2. تصفية الأفلام التي لها أجزاء فقط (Sequels Only)
+const byFranchise = async (req, res, next) => {
+    try {
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const { movies, pagination } = await movieModel.getFranchiseMovies(page, 12);
+
+        res.render("pages/movies/index", { 
+            movies,
+            pagination,
+            activeGenre: 'franchises',
+            searchQuery: '',
+            baseUrl: '/movies/franchises',
+            pageTitle: 'Sequels & Movie Franchises'
         });
-}
+    } catch (err) {
+        next(err);
+    }
+};
 
-// تصفية حسب التصنيف (Action, Drama, Comedy)
-const byGenre = (req, res) => {
-    const genre = req.params.genre;
-    movieModel.getByGenre(genre)
-        .then(movies => {
-            res.render("pages/movies/index", { movies, activeGenre: genre });
+// 3. البحث عن أفلام مع الترقيم
+const moviesSearch = async (req, res, next) => {
+    try {
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const partOfMovieTitle = (req.query.partOfMovieTitle || '').trim();
+        const { movies, pagination } = await movieModel.moviesSearch(partOfMovieTitle, page, 12);
+
+        res.render("pages/movies/index", { 
+            movies,
+            pagination,
+            activeGenre: '',
+            searchQuery: partOfMovieTitle,
+            baseUrl: '/movies/search',
+            pageTitle: `Search: ${partOfMovieTitle}`
         });
-}
+    } catch (err) {
+        next(err);
+    }
+};
 
-// CRUD: عرض فيلم محدد
-const show = (req, res) => {
-    const id = req.params.id;
-    movieModel.show(id)
-        .then(movies => {
-            res.render("pages/movies/show", { movie: movies[0] });
+// 4. تصفية حسب التصنيف مع الترقيم
+const byGenre = async (req, res, next) => {
+    try {
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const genre = req.params.genre;
+        const { movies, pagination } = await movieModel.getByGenre(genre, page, 12);
+
+        res.render("pages/movies/index", { 
+            movies,
+            pagination,
+            activeGenre: genre,
+            searchQuery: '',
+            baseUrl: `/movies/genre/${genre}`,
+            pageTitle: `${genre.charAt(0).toUpperCase() + genre.slice(1)} Movies`
         });
-}
+    } catch (err) {
+        next(err);
+    }
+};
 
-// CRUD: صفحة نموذج الإضافة
+// 5. عرض تفاصيل فيلم محدد مع جلب أجزاء السلسلة المرتبطة
+const show = async (req, res, next) => {
+    try {
+        const id = req.params.id;
+
+        if (id === 'new' || id === 'createForm') {
+            return createForm(req, res);
+        }
+
+        if (!ObjectId.isValid(id)) {
+            return next(new AppError('Invalid Movie ID format', 400));
+        }
+
+        const movie = await movieModel.show(id);
+        if (!movie) {
+            return next(new AppError('Movie not found', 404));
+        }
+
+        const { seriesName, parts: seriesMovies } = await movieModel.getSeriesMovies(movie);
+        const requestedReturnTo = req.query.returnTo;
+        const returnTo = typeof requestedReturnTo === 'string'
+            && (requestedReturnTo === '/' || requestedReturnTo.startsWith('/movies'))
+            && !requestedReturnTo.startsWith('//')
+            && !requestedReturnTo.includes('\\')
+            ? requestedReturnTo
+            : '/movies';
+        const requestedReturnScroll = Number(req.query.returnScroll);
+        const returnScroll = Number.isFinite(requestedReturnScroll) && requestedReturnScroll >= 0
+            ? requestedReturnScroll
+            : 0;
+
+        res.render("pages/movies/show", { 
+            movie,
+            seriesName,
+            seriesMovies,
+            returnTo,
+            returnScroll,
+            pageTitle: movie.title 
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
+// 6. صفحة نموذج الإضافة
 const createForm = (req, res) => {
-    res.render("pages/movies/createForm");
-}
+    res.render("pages/movies/createForm", {
+        pageTitle: 'Add New Movie'
+    });
+};
 
-// CRUD: حفظ الفيلم جديد
-const store = (req, res) => {
-    const formData = req.body;
-    if (req.file) {
-        formData.thumbnail = req.file.filename;
+// 7. حفظ فيلم جديد
+const store = async (req, res, next) => {
+    let uploadedThumbnail;
+    try {
+        const formData = req.body;
+        if (req.file) {
+            uploadedThumbnail = await saveUploadedFile(req.file);
+            formData.thumbnail = uploadedThumbnail;
+        }
+
+        await movieModel.store(formData);
+        res.redirect("/movies");
+    } catch (err) {
+        if (uploadedThumbnail) {
+            await deleteUploadedFile(uploadedThumbnail);
+        }
+        next(err);
     }
-    movieModel.store(formData)
-        .then(() => {
-            res.redirect("/movies");
-        });
-}
+};
 
-// CRUD: صفحة نموذج التعديل
-const updateForm = (req, res) => {
-    const id = req.params.id;
-    movieModel.updateForm(id)
-        .then(movies => {
-            res.render("pages/movies/updateForm", { movie: movies[0] });
-        });
-}
+// 8. صفحة نموذج التعديل
+const updateForm = async (req, res, next) => {
+    try {
+        const id = req.params.id;
 
-// CRUD: حفظ التعديلات
-const update = (req, res) => {
-    const formData = req.body;
-    if (req.file) {
-        formData.thumbnail = req.file.filename;
+        if (!ObjectId.isValid(id)) {
+            return next(new AppError('Invalid Movie ID format', 400));
+        }
+
+        const movie = await movieModel.updateForm(id);
+        if (!movie) {
+            return next(new AppError('Movie to edit not found', 404));
+        }
+
+        res.render("pages/movies/updateForm", { 
+            movie,
+            pageTitle: `Edit: ${movie.title}`
+        });
+    } catch (err) {
+        next(err);
     }
-    movieModel.update(formData)
-        .then(() => {
-            res.redirect("/movies");
-        });
-}
+};
 
-// CRUD: حذف فيلم
-const destroy = (req, res) => {
-    const id = req.params.id;
-    movieModel.destroy(id)
-        .then(() => {
-            res.redirect("/movies");
-        });
-}
+// 9. حفظ التعديلات
+const update = async (req, res, next) => {
+    let uploadedThumbnail;
+    let movieUpdated = false;
+    try {
+        const id = req.params.id || req.body.id;
+
+        if (!id || !ObjectId.isValid(id)) {
+            return next(new AppError('Invalid Movie ID format', 400));
+        }
+
+        const oldMovie = await movieModel.show(id);
+        if (!oldMovie) {
+            return next(new AppError('Movie to update not found', 404));
+        }
+
+        const formData = { ...req.body, id };
+
+        if (req.file) {
+            uploadedThumbnail = await saveUploadedFile(req.file);
+            formData.thumbnail = uploadedThumbnail;
+        }
+
+        await movieModel.update(formData);
+        movieUpdated = true;
+
+        if (uploadedThumbnail && oldMovie.thumbnail) {
+            await deleteUploadedFile(oldMovie.thumbnail);
+        }
+
+        res.redirect(`/movies/${id}`);
+    } catch (err) {
+        if (uploadedThumbnail && !movieUpdated) {
+            await deleteUploadedFile(uploadedThumbnail);
+        }
+        next(err);
+    }
+};
+
+// 10. حذف فيلم
+const destroy = async (req, res, next) => {
+    try {
+        const id = req.params.id;
+
+        if (!ObjectId.isValid(id)) {
+            return next(new AppError('Invalid Movie ID format', 400));
+        }
+
+        const movie = await movieModel.show(id);
+        if (!movie) {
+            return next(new AppError('Movie to delete not found', 404));
+        }
+
+        if (movie.thumbnail) {
+            await deleteUploadedFile(movie.thumbnail);
+        }
+
+        await movieModel.destroy(id);
+        res.redirect("/movies");
+    } catch (err) {
+        next(err);
+    }
+};
 
 module.exports = {
     index,
+    byFranchise,
     moviesSearch,
     byGenre,
     show,

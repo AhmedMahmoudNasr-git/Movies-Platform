@@ -1,0 +1,47 @@
+<%- include('../../partials/siteHeader') %>
+
+<div class="container my-5" style="max-width: 480px;">
+    <div class="card card-dark rounded-4 p-4 p-md-5 shadow-lg">
+        <div class="text-center mb-4">
+            <h2 class="fw-bold mb-1 text-white">Create Account</h2>
+            <p class="small" style="color: #94A3B8;">Join <span style="color: #7C3AED; font-weight: 800;">Movies</span><span style="color: #2563EB; font-weight: 800;">Hub</span> to explore and manage movies</p>
+        </div>
+
+        <% if (error) { %>
+            <div class="alert alert-danger py-2 mb-3 small" role="alert">
+                <%= error %>
+            </div>
+        <% } %>
+
+        <form action="/auth/register" method="POST">
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Username</label>
+                <input type="text" name="username" class="form-control py-2" placeholder="JohnDoe" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Email Address</label>
+                <input type="email" name="email" class="form-control py-2" placeholder="name@example.com" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Password</label>
+                <input type="password" name="password" class="form-control py-2" placeholder="Minimum 6 characters" required>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label fw-semibold">Confirm Password</label>
+                <input type="password" name="confirmPassword" class="form-control py-2" placeholder="Repeat your password" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary-custom w-100 py-2 mb-3">Create Account</button>
+
+            <div class="text-center mt-2 small">
+                <span style="color: #94A3B8;">Already have an account? </span>
+                <a href="/auth/login" style="color: #7C3AED; font-weight: 600; text-decoration: none;">Sign In</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<%- include('../../partials/siteFooter') %>

@@ -3,70 +3,170 @@
 <div class="container">
     
     <!-- Title & Add Button -->
-    <div class="page-header">
-        <h1>Movies List</h1>
-        <a href="/movies/createForm" class="btn-custom btn-primary-custom">+ Add New Movie</a>
+    <div class="page-header d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="mb-1">Featured Movies</h1>
+            <p class="text-muted small mb-0">Browse latest, trending, and franchise movies on MoviesHub</p>
+        </div>
+
+        <% if (typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'admin') { %>
+            <a href="/movies/new" class="btn-custom btn-primary-custom">+ Add New Movie</a>
+        <% } %>
     </div>
 
-    <!-- Search & Filters -->
+    <!-- Glowing Neon Search Bar & Controls -->
     <div class="controls-card">
-        <form action="/moviesSearch" method="GET" class="search-form">
-            <input 
-                type="text" 
-                name="partOfMovieTitle" 
-                class="search-input" 
-                placeholder="Search by movie title or cast name..."
-            >
-            <button type="submit" class="btn-custom btn-blue">Search</button>
-            <a href="/movies" class="btn-custom btn-reset">Reset</a>
-        </form>
+        
+        <div class="search-neon-wrapper">
+            <div class="search-neon-glow-bg"></div>
+            <form action="/movies/search" method="GET" class="search-neon-capsule">
+                <div class="search-neon-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                </div>
+                
+                <input 
+                    type="text" 
+                    name="partOfMovieTitle" 
+                    class="search-neon-input" 
+                    placeholder="Search movies by title, character, or actor..."
+                    value="<%= typeof searchQuery !== 'undefined' ? searchQuery : '' %>"
+                    autocomplete="off"
+                >
 
+                <% if (typeof searchQuery !== 'undefined' && searchQuery) { %>
+                    <a href="/movies" class="search-clear-btn" title="Clear Search">&times;</a>
+                <% } %>
+
+                <button type="submit" class="search-neon-btn">
+                    <span>Search</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                </button>
+            </form>
+        </div>
+
+        <!-- Filter Tags -->
         <div class="tags-group">
             <a href="/movies" class="btn-tag <%= activeGenre === 'all' ? 'active' : '' %>">All Recent</a>
+            
+            <a href="/movies/franchises" class="btn-tag <%= activeGenre === 'franchises' ? 'active' : '' %>" style="<%= activeGenre === 'franchises' ? '' : 'border-color: rgba(124, 58, 237, 0.4);' %>">
+                <span style="font-size: 1.05rem; margin-right: 5px;">🎞️</span> Sequels Only
+            </a>
+
             <a href="/movies/genre/action" class="btn-tag <%= activeGenre === 'action' ? 'active' : '' %>">Action</a>
             <a href="/movies/genre/drama" class="btn-tag <%= activeGenre === 'drama' ? 'active' : '' %>">Drama</a>
             <a href="/movies/genre/comedy" class="btn-tag <%= activeGenre === 'comedy' ? 'active' : '' %>">Comedy</a>
         </div>
     </div>
 
-    <!-- Movies Grid Display -->
+    <!-- 3-Column Interactive Movies Grid Display -->
     <% if (movies && movies.length > 0) { %>
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1.5rem;">
+        <div class="movies-grid-3col">
             <% movies.forEach(movie => { %>
-                <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);">
-                    
-                    <div style="height: 250px; background-color: #cbd5e1; display: flex; align-items: center; justify-content: center; overflow: hidden;">
-                        <% if (movie.thumbnail) { %>
-                            <img src="<%= movie.thumbnail.startsWith('http') ? movie.thumbnail : '/img/uploades/' + movie.thumbnail %>" 
-                                 alt="<%= movie.title %>" 
-                                 style="width: 100%; height: 100%; object-fit: cover;">
-                        <% } else { %>
-                            <span style="color: #64748b; font-size: 0.9rem;">No Image</span>
-                        <% } %>
-                    </div>
+                
+                <% 
+                    // Check if movie looks like a sequel or franchise part
+                    const isSequel = movie.series || (movie.title && /(:|\bPart\b|\bChapter\b|\bVol\b|\s+[2-9]\b|\s+II\b|\s+III\b|\s+IV\b)/i.test(movie.title));
+                %>
 
-                    <div style="padding: 1rem; flex: 1; display: flex; flex-direction: column; justify-content: space-between;">
+                <div class="movie-card" data-tilt="true">
+                    <!-- Dynamic Edge Glare Sheen -->
+                    <div class="card-glare"></div>
+                    
+                    <!-- Clickable Poster Image -->
+                    <a href="/movies/<%= movie._id %>" data-movie-navigation class="movie-poster-link" title="View <%= movie.title %>">
+                        <div class="movie-thumb-wrapper">
+                            <!-- Floating Year Badge -->
+                            <span class="badge-floating-year"><%= movie.year %></span>
+
+                            <!-- Floating Sequel Badge -->
+                            <% if (isSequel) { %>
+                                <span class="badge-floating-sequel">🎞️ Sequel</span>
+                            <% } %>
+
+                            <% if (movie.thumbnail) { %>
+                                <img src="<%= movie.thumbnail.startsWith('http') ? movie.thumbnail : '/img/uploades/' + movie.thumbnail %>" 
+                                     alt="<%= movie.title %>" 
+                                     loading="lazy">
+                            <% } else { %>
+                                <span style="color: #64748b; font-size: 1.05rem; font-weight: 500;">No Poster</span>
+                            <% } %>
+
+                            <!-- Bottom Vignette Gradient -->
+                            <div class="movie-thumb-overlay"></div>
+                        </div>
+                    </a>
+
+                    <div class="movie-card-content">
                         <div>
-                            <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem; color: #0f172a;"><%= movie.title %></h3>
-                            <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 0.5rem;">
-                                <strong>Year:</strong> <%= movie.year %>
-                            </p>
-                            <p style="font-size: 0.8rem; color: #2563eb; margin-bottom: 1rem;">
-                                <%= Array.isArray(movie.genres) ? movie.genres.join(', ') : (movie.genres || '') %>
-                            </p>
+                            <a href="/movies/<%= movie._id %>" data-movie-navigation style="text-decoration: none; color: inherit;">
+                                <h3 class="movie-card-title"><%= movie.title %></h3>
+                            </a>
+                            
+                            <!-- Mini Genre Badges -->
+                            <div class="mb-3">
+                                <% if (Array.isArray(movie.genres) && movie.genres.length > 0) { %>
+                                    <% movie.genres.slice(0, 3).forEach(g => { %>
+                                        <span class="genre-badge-mini"><%= g %></span>
+                                    <% }) %>
+                                <% } else if (movie.genres) { %>
+                                    <span class="genre-badge-mini"><%= movie.genres %></span>
+                                <% } %>
+                            </div>
                         </div>
 
-                        <div style="display: flex; gap: 5px;">
-                            <a href="/movies/show/<%= movie._id %>" class="btn-custom btn-blue" style="flex: 1; padding: 0.4rem; font-size: 0.85rem; text-align: center;">View</a>
-                            <a href="/movies/destroy/<%= movie._id %>" onclick="return confirm('Are you sure?')" class="btn-custom" style="background-color: #ef4444; color: white; padding: 0.4rem 0.6rem; font-size: 0.85rem;">Delete</a>
+                        <div style="display: flex; gap: 8px; align-items: stretch; margin-top: auto;">
+                            <a href="/movies/<%= movie._id %>" data-movie-navigation class="btn-custom btn-blue" style="flex: 1; padding: 0.68rem; font-size: 0.95rem; text-decoration: none;">
+                                View Details &rarr;
+                            </a>
+                            
+                            <% if (typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'admin') { %>
+                                <form action="/movies/<%= movie._id %>?_method=DELETE" method="POST" style="margin: 0;" onsubmit="return confirm('Are you sure you want to delete this movie?');">
+                                    <button type="submit" class="btn-custom btn-danger" style="padding: 0.68rem 1rem; font-size: 0.95rem;" title="Delete Movie">✕</button>
+                                </form>
+                            <% } %>
                         </div>
                     </div>
                 </div>
             <% }) %>
         </div>
+
+        <!-- Pagination Bar -->
+        <% if (typeof pagination !== 'undefined' && pagination.totalPages > 1) { %>
+            <nav class="d-flex justify-content-center mt-5 mb-3">
+                <ul class="pagination shadow-sm">
+                    <li class="page-item <%= pagination.page <= 1 ? 'disabled' : '' %>">
+                        <a class="page-link" href="<%= baseUrl %>?<%= (typeof searchQuery !== 'undefined' && searchQuery) ? 'partOfMovieTitle=' + encodeURIComponent(searchQuery) + '&' : '' %>page=<%= pagination.page - 1 %>">Previous</a>
+                    </li>
+
+                    <% 
+                        const startPage = Math.max(1, pagination.page - 2);
+                        const endPage = Math.min(pagination.totalPages, pagination.page + 2);
+                        for (let p = startPage; p <= endPage; p++) { 
+                    %>
+                        <li class="page-item <%= p === pagination.page ? 'active' : '' %>">
+                            <a class="page-link" href="<%= baseUrl %>?<%= (typeof searchQuery !== 'undefined' && searchQuery) ? 'partOfMovieTitle=' + encodeURIComponent(searchQuery) + '&' : '' %>page=<%= p %>"><%= p %></a>
+                        </li>
+                    <% } %>
+
+                    <li class="page-item <%= pagination.page >= pagination.totalPages ? 'disabled' : '' %>">
+                        <a class="page-link" href="<%= baseUrl %>?<%= (typeof searchQuery !== 'undefined' && searchQuery) ? 'partOfMovieTitle=' + encodeURIComponent(searchQuery) + '&' : '' %>page=<%= pagination.page + 1 %>">Next</a>
+                    </li>
+                </ul>
+            </nav>
+            <div class="text-center text-muted small mb-4">
+                Page <%= pagination.page %> of <%= pagination.totalPages %> (Total: <%= pagination.totalMovies %> movies)
+            </div>
+        <% } %>
+
     <% } else { %>
         <div class="empty-card">
-            <p>No movies found.</p>
+            <p>No movies found matching your query.</p>
         </div>
     <% } %>
 

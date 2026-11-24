@@ -1,0 +1,18 @@
+<%- include('../partials/siteHeader') %>
+
+<div class="container my-5 text-center" style="max-width: 600px;">
+    <div class="card card-dark rounded-4 p-5 shadow-lg">
+        <div class="mb-3">
+            <span style="font-size: 4rem;"><%= statusCode === 404 ? '🔍' : '⚠️' %></span>
+        </div>
+        <h1 class="display-4 fw-bold mb-2" style="color: #ef4444;"><%= statusCode %></h1>
+        <h3 class="fw-semibold mb-3 text-white"><%= statusCode === 404 ? 'Oops! Page or Movie Not Found' : 'Something went wrong!' %></h3>
+        <p class="mb-4" style="color: #94A3B8;"><%= message %></p>
+        
+        <div>
+            <a href="/movies" class="btn btn-primary-custom px-4 py-2">Back to Home</a>
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/siteFooter') %>
